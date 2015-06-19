@@ -28,5 +28,4 @@ def tango_java_lib = "../../tango-java-lib"
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile fileTree(dir: tango_java_lib, include: ['**/*.jar'])
-    compile project(':TangoUtils')
 }
