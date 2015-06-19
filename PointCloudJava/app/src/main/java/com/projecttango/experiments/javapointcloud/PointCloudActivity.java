@@ -46,7 +46,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.UUID;
 
 /**
  * Simple Activity that exercises the Tango code and nothing else
@@ -97,7 +96,6 @@ public class PointCloudActivity extends Activity {
         mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_LEARNINGMODE, true);
         mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_EXPERIMENTAL_HIGH_ACCURACY_SMALL_SCALE_ADF,
                 true);
-        mConfig.putString(TangoConfig.KEY_STRING_AREADESCRIPTION, UUID.randomUUID().toString());
         mIsTangoServiceConnected = false;
 
     }
