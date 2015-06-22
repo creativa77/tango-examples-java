@@ -22,71 +22,56 @@ import com.google.atap.tangoservice.TangoConfig;
 import com.google.atap.tangoservice.TangoCoordinateFramePair;
 import com.google.atap.tangoservice.TangoErrorException;
 import com.google.atap.tangoservice.TangoEvent;
-import com.google.atap.tangoservice.TangoInvalidException;
 import com.google.atap.tangoservice.TangoOutOfDateException;
 import com.google.atap.tangoservice.TangoPoseData;
 import com.google.atap.tangoservice.TangoXyzIjData;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager.NameNotFoundException;
-import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.TextView;
+import android.widget.CheckBox;
 import android.widget.Toast;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 /**
  * Simple Activity that exercises the Tango code and nothing else
  */
-public class PointCloudActivity extends Activity {
+public class EmptyActivity extends Activity {
 
-    private static final String TAG = PointCloudActivity.class.getSimpleName();
-    private static final int SECS_TO_MILLISECS = 1000;
+    private static final String TAG = EmptyActivity.class.getSimpleName();
     private Tango mTango;
     private TangoConfig mConfig;
 
+    private Button buttonStart, buttonStop;
+    private CheckBox chkMotionTracking, chkDepthPerception, chkAreaLearning, chkCameraPreview;
+
     private boolean mIsTangoServiceConnected;
-    private TangoPoseData mPose;
-    private static final int UPDATE_INTERVAL_MS = 100;
-    public static Object poseLock = new Object();
-    public static Object depthLock = new Object();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_jpoint_cloud);
+        setContentView(R.layout.activity_main);
         setTitle(R.string.app_name);
 
+        buttonStart = (Button) findViewById(R.id.btn_start);
+        buttonStop = (Button) findViewById(R.id.btn_stop);
+        chkAreaLearning = (CheckBox) findViewById(R.id.chk_area_learning);
+        chkCameraPreview = (CheckBox) findViewById(R.id.chk_camera_preview);
+        chkMotionTracking = (CheckBox) findViewById(R.id.chk_motion_tracking);
+        chkDepthPerception = (CheckBox) findViewById(R.id.chk_depth_perception);
+
         mTango = new Tango(this);
-        mConfig = new TangoConfig();
-        mConfig = mTango.getConfig(TangoConfig.CONFIG_TYPE_CURRENT);
-        mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_DEPTH, true);
-        mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_MOTIONTRACKING, true);
-        mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_AUTORECOVERY, true);
-        mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_LEARNINGMODE, true);
         mIsTangoServiceConnected = false;
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        try {
-            mTango.disconnect();
-            mIsTangoServiceConnected = false;
-        } catch (TangoErrorException e) {
-            Toast.makeText(getApplicationContext(), R.string.TangoError, Toast.LENGTH_SHORT).show();
-        }
+        stopTango();
     }
 
     @Override
@@ -114,27 +99,44 @@ public class PointCloudActivity extends Activity {
                 finish();
                 return;
             }
-            try {
-                setTangoListeners();
-            } catch (TangoErrorException e) {
-                Toast.makeText(this, R.string.TangoError, Toast.LENGTH_SHORT).show();
-            } catch (SecurityException e) {
-                Toast.makeText(getApplicationContext(), R.string.motiontrackingpermission,
-                        Toast.LENGTH_SHORT).show();
-            }
             if (Tango.hasPermission(this, Tango.PERMISSIONTYPE_ADF_LOAD_SAVE) &&
                     Tango.hasPermission(this, Tango.PERMISSIONTYPE_MOTION_TRACKING)) {
                 try {
-                    mTango.connect(mConfig);
-                    mIsTangoServiceConnected = true;
+                    buttonStart.setEnabled(true);
                 } catch (TangoOutOfDateException e) {
                     Toast.makeText(getApplicationContext(), R.string.TangoOutOfDateException,
                             Toast.LENGTH_SHORT).show();
                 } catch (TangoErrorException e) {
                     Toast.makeText(getApplicationContext(), R.string.TangoError,
                             Toast.LENGTH_SHORT).show();
+                } catch (SecurityException e) {
+                    Toast.makeText(getApplicationContext(), R.string.motiontrackingpermission,
+                            Toast.LENGTH_SHORT).show();
                 }
             }
+        }
+    }
+
+    /**
+     * Assumed called after permissions are granted.
+     */
+    private void startTango() {
+        mConfig = new TangoConfig();
+        mConfig = mTango.getConfig(TangoConfig.CONFIG_TYPE_CURRENT);
+        mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_DEPTH, chkDepthPerception.isChecked());
+        mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_MOTIONTRACKING, chkMotionTracking.isChecked());
+        mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_LEARNINGMODE, chkAreaLearning.isChecked());
+        mTango.connect(mConfig);
+        setTangoListeners();
+        mIsTangoServiceConnected = true;
+    }
+
+    private void stopTango() {
+        try {
+            mTango.disconnect();
+            mIsTangoServiceConnected = false;
+        } catch (TangoErrorException e) {
+            Toast.makeText(getApplicationContext(), R.string.TangoError, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -149,6 +151,7 @@ public class PointCloudActivity extends Activity {
         framePairs.add(new TangoCoordinateFramePair(
                 TangoPoseData.COORDINATE_FRAME_START_OF_SERVICE,
                 TangoPoseData.COORDINATE_FRAME_DEVICE));
+
         // Listen for new Tango data
         mTango.connectListener(framePairs, new OnTangoUpdateListener() {
 
@@ -169,8 +172,27 @@ public class PointCloudActivity extends Activity {
 
             @Override
             public void onFrameAvailable(int cameraId) {
-                // We are not using onFrameAvailable for this application.
+
             }
         });
+    }
+
+    public void startClicked(View view) {
+        startTango();
+        setViewStates(true);
+    }
+
+    public void stopClicked(View view) {
+        stopTango();
+        setViewStates(false);
+    }
+
+    private void setViewStates(boolean tangoRunning) {
+        buttonStart.setEnabled(!tangoRunning);
+        buttonStop.setEnabled(tangoRunning);
+        chkDepthPerception.setEnabled(!tangoRunning);
+        chkCameraPreview.setEnabled(!tangoRunning);
+        chkMotionTracking.setEnabled(!tangoRunning);
+        chkAreaLearning.setEnabled(!tangoRunning);
     }
 }
