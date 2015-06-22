@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.projecttango.experiments.javapointcloud;
+package com.projecttango.experiments.javaempty;
 
 import com.google.atap.tangoservice.Tango;
 import com.google.atap.tangoservice.Tango.OnTangoUpdateListener;
@@ -77,7 +77,7 @@ public class EmptyActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (!mIsTangoServiceConnected) {
+        if (!mIsTangoServiceConnected && !hasPermissions()) {
             startActivityForResult(
                     Tango.getRequestPermissionIntent(Tango.PERMISSIONTYPE_MOTION_TRACKING),
                     Tango.TANGO_INTENT_ACTIVITYCODE);
@@ -86,6 +86,11 @@ public class EmptyActivity extends Activity {
                     Tango.TANGO_INTENT_ACTIVITYCODE + 1);
         }
         Log.i(TAG, "onResumed");
+    }
+
+    private boolean hasPermissions() {
+        return Tango.hasPermission(this, Tango.PERMISSIONTYPE_ADF_LOAD_SAVE) &&
+                Tango.hasPermission(this, Tango.PERMISSIONTYPE_MOTION_TRACKING);
     }
 
     @Override
@@ -99,8 +104,7 @@ public class EmptyActivity extends Activity {
                 finish();
                 return;
             }
-            if (Tango.hasPermission(this, Tango.PERMISSIONTYPE_ADF_LOAD_SAVE) &&
-                    Tango.hasPermission(this, Tango.PERMISSIONTYPE_MOTION_TRACKING)) {
+            if (hasPermissions()) {
                 try {
                     buttonStart.setEnabled(true);
                 } catch (TangoOutOfDateException e) {
@@ -132,11 +136,13 @@ public class EmptyActivity extends Activity {
     }
 
     private void stopTango() {
-        try {
-            mTango.disconnect();
-            mIsTangoServiceConnected = false;
-        } catch (TangoErrorException e) {
-            Toast.makeText(getApplicationContext(), R.string.TangoError, Toast.LENGTH_SHORT).show();
+        if (mIsTangoServiceConnected) {
+            try {
+                mTango.disconnect();
+                mIsTangoServiceConnected = false;
+            } catch (TangoErrorException e) {
+                Toast.makeText(getApplicationContext(), R.string.TangoError, Toast.LENGTH_SHORT).show();
+            }
         }
     }
 

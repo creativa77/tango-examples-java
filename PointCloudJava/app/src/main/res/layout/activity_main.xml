@@ -97,7 +97,7 @@
                 android:id="@+id/btn_stop"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Start"
+                android:text="Stop"
                 android:onClick="stopClicked"
                 android:enabled="false"/>
         </LinearLayout>
